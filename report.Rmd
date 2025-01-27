@@ -1,0 +1,190 @@
+---
+title: "Visualising air pollution data across multiple sites in the Czech Republic from 2013 to 2019"
+output: pdf_document
+
+params:
+  dt_dataset: NA
+  dt_aqs_criterion: NA
+  aggregation: NA
+  time_hourly: NA
+  hours_day_threshold: NA
+  pollutant: NA
+  threshold: NA
+
+---
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+library(ggplot2)
+library(maps)
+library(mapdata)
+library(DT)
+library(rmarkdown)
+library(dplyr)
+library(shiny)
+library(scales)
+
+#setwd("~/Desktop/UOG - Msc Data Analytics/Year 1/R Programming/conversion folder")
+  stations_data <- readRDS("__Stations.rds")
+
+hourly_title <- paste(toupper(params$pollutant),"(Raw Hourly Data)",sep=" ")
+daily_avg_title <- paste(toupper(params$pollutant),"(Daily Average)",sep=" ")
+     daily_max_title <- paste(toupper(params$pollutant),"(Daily Maxima)",sep=" ")
+     day_threshold_title <- paste(toupper(params$pollutant),
+        "(Number of hours per day which threshold exceeded)",sep=" ")
+     year_threshold_title <- paste(toupper(params$pollutant),
+        "(Number of hours per year which threshold exceeded)",sep=" ")
+
+temp <- params$dt_dataset %>% inner_join(stations_data,by=c("AirQualityStationEoICode"="EoICode")) %>%
+       select(Year,Month,Day,Hour,Concentration,StationName) %>% 
+       mutate(calendar_year=decimal_date(ymd(paste(Year, Month, Day, sep="-")))) %>%
+       mutate(actual_date=as.Date(paste(Year, Month, Day, sep="-"))) %>%
+       mutate(day_within_year=as.Date(strptime((paste(Month, Day, sep="/")), '%m/%d'))) %>%
+       mutate(day_within_week=(wday(actual_date)-1) + (Hour/24)) 
+temp4 <- temp %>%
+       filter(!(is.na(Concentration))) %>%
+       select(Year,Month,Day,Hour,Concentration,StationName) %>% 
+       mutate(actual_date=as.Date(paste(Year, Month, Day, sep="-"))) %>%
+       mutate(category = ifelse(Concentration>params$threshold, 1, 0)) %>% 
+       select (c(actual_date,StationName,category,Hour)) %>% distinct() %>%
+       group_by(actual_date,StationName) %>% 
+       summarise(hour_sum=sum(category)) %>%
+       mutate(day_within_year=(as.Date(strptime((format(actual_date,'%m/%d')), '%m/%d')))) %>%
+       mutate(day_within_week=(wday(actual_date)-1))
+temp5 <- temp %>%
+       filter(!(is.na(Concentration))) %>%
+       mutate(actual_date=as.Date(paste(Year, Month, Day, sep="-"))) %>%
+       mutate(category = ifelse(Concentration>params$threshold, 1, 0)) %>% 
+       select (c(actual_date,StationName,category,Hour)) %>% distinct() %>%
+       group_by(year_actual_date=year(actual_date),StationName) %>% 
+       summarise(hour_sum=sum(category))
+if (params$aggregation=="raw_hourly_data" && params$time_hourly=="calendar_time" )  {
+    ggplot(data=temp) + 
+       aes(x=calendar_year,  y=Concentration) +
+       geom_line(aes(colour=StationName)) +
+      geom_hline(yintercept=params$dt_aqs_criterion, linetype="dashed", color = "black")+
+      labs(x = "Date",y="Concentration",subtitle = hourly_title,
+           title = "Plotted as time series against calendar time")
+      }
+ if (params$aggregation=="raw_hourly_data" && params$time_hourly=="date_within_year" ){
+       ggplot(data=temp) + 
+         aes(x=day_within_year,  y=Concentration) +
+         geom_point(aes(colour=StationName))+
+         scale_x_date(breaks = seq(min(temp$day_within_year,na.rm = TRUE), 
+                                   max(temp$day_within_year,na.rm = TRUE), by="1 months"), 
+                      date_labels = "%B")+
+      geom_hline(yintercept=params$dt_aqs_criterion, linetype="dashed", color = "black")+
+      labs(x = "Month",y="Concentration",subtitle = hourly_title,
+           title = "Plotted against hour in the year")
+ }
+ if (params$aggregation=="raw_hourly_data" && params$time_hourly=="day_within_week" )  {
+    ggplot(data=temp) + 
+      aes(x=day_within_week,  y=Concentration) +
+      geom_point(aes(colour=StationName))+
+      scale_x_continuous(breaks=seq(0,6,1),
+                         labels = c("Mon","Tue","Wed","Thu","Fri","Sat","Sun"))+
+      geom_hline(yintercept=params$dt_aqs_criterion, linetype="dashed", color = "black")+
+      labs(x = "Day",y="Concentration",subtitle = hourly_title,
+           title = "Plotted against hour in the week")
+  }
+ if (params$aggregation=="raw_hourly_data" && params$time_hourly=="hour_day" )  {
+    ggplot(data=temp) + 
+      aes(x=Hour,  y=Concentration) +
+      geom_point(aes(colour=StationName)) +
+      scale_x_continuous(breaks = seq(from = 0, to = 23, by = 1))+
+      geom_hline(yintercept=params$dt_aqs_criterion, linetype="dashed", color = "black")+
+      labs(x = "Hour",y="Concentration",subtitle = hourly_title,
+           title = "Plotted against hour in the day")
+     }
+ if (params$aggregation=="daily_averages")  {
+    temp2 <- temp  %>%
+      filter(!(is.na(Concentration))) %>%
+      select(Year,Month,Day,Hour,Concentration,StationName) %>% 
+      mutate(actual_date=as.Date(paste(Year, Month, Day, sep="-"))) %>%
+      group_by(actual_date,StationName) %>% 
+      summarise(avg_concentration=mean(Concentration)) %>%
+      mutate(day_within_week=wday(actual_date, label=TRUE))
+    
+    ggplot(data=temp2) + 
+      aes(x=day_within_week,  y=avg_concentration) +
+      geom_point(aes(colour=StationName))+
+      scale_x_discrete(limits=c("Mon","Tue","Wed","Thu","Fri","Sat","Sun"))+
+      geom_hline(yintercept=params$dt_aqs_criterion, linetype="dashed", color = "black")+
+      labs(x = "Day",y="Concentration",subtitle = daily_avg_title,
+           title = "Plotted against day in the week")
+    
+       }
+   if (params$aggregation=="daily_maxima")  {
+       temp3 <- temp %>%
+         filter(!(is.na(Concentration))) %>%
+         select(Year,Month,Day,Hour,Concentration,StationName) %>% 
+         mutate(actual_date=as.Date(paste(Year, Month, Day, sep="-"))) %>%
+         group_by(actual_date,StationName) %>% 
+         summarise(max_concentration=max(Concentration)) %>%
+         mutate(day_within_week=wday(actual_date, label=TRUE))
+       
+       ggplot(data=temp3) + 
+         aes(x=day_within_week,  y=max_concentration) +
+         geom_point(aes(colour=StationName))+
+         scale_x_discrete(limits=c("Mon","Tue","Wed","Thu","Fri","Sat","Sun"))+
+      labs(x = "Day",y="Concentration",subtitle = daily_max_title,
+           title = "Plotted against day in the week")
+     } 
+     if (params$aggregation=="hours_day_threshold" && params$hours_day_threshold=="calendar_time"){
+       ggplot(data=temp4) + 
+           aes(x=actual_date,  y=hour_sum) +
+           geom_line(aes(colour=StationName))+
+         labs(x = "Date",y="Hours",title = day_threshold_title)
+       }
+   if (params$aggregation=="hours_day_threshold" && params$hours_day_threshold=="date_within_year"){
+         ggplot(data=temp4) + 
+           aes(x=day_within_year,  y=hour_sum) +
+           geom_point(aes(colour=StationName))+
+           scale_x_date(breaks = seq(min(temp4$day_within_year,na.rm = TRUE), 
+                                     max(temp4$day_within_year,na.rm = TRUE), by="1 months"), 
+                        date_labels = "%B")+
+         labs(x = "Month",y="Hours",title = day_threshold_title)
+       }
+   if (params$aggregation=="hours_day_threshold" && params$hours_day_threshold=="day_within_week"){
+         ggplot(data=temp4) + 
+           aes(x=day_within_week,  y=hour_sum) +
+           geom_point(aes(colour=StationName))+
+           scale_x_continuous(breaks=seq(0,6,1),
+                              labels = c("Mon","Tue","Wed","Thu","Fri","Sat","Sun"))+
+         labs(x = "Day",y="Hours",title = day_threshold_title)
+       }
+   if (params$aggregation=="hours_year_threshold"){
+       ggplot(data=temp5) + 
+         aes(x=year_actual_date,  y=hour_sum) +
+         geom_line(aes(colour=StationName))+
+         geom_hline(yintercept=params$dt_aqs_criterion, linetype="dashed", color = "black")+
+         labs(x = "Date",y="Hours",title = year_threshold_title)
+       }
+  
+```
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+
+stations_data_selected <- stations_data %>% 
+         filter( EoICode %in% unique(params$dt_dataset$AirQualityStationEoICode))
+       
+      ggplot() + geom_polygon(data=map_data("world", "Czech Republic"), aes(x=long, y = lat, group = group)) + 
+         coord_fixed(1.3)+ 
+         geom_point(data = stations_data_selected, aes(x = Longitude, y = Latitude,
+                                                       colour=StationName))+
+        labs(title = "Plot with the location of the measuring station(s)") 
+```
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(knitr)
+stations_data_transpose <- as.data.frame(t(as.matrix(stations_data_selected)))
+       names(stations_data_transpose) <- paste("Station",1:ncol(stations_data_transpose))
+kable(stations_data_transpose,caption="Table Summary of the Station(s) selected")
+```
