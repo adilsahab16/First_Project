@@ -1,10 +1,10 @@
 # Visualising air pollution data
 The app is available in : https://adil-sahab-16.shinyapps.io/Shinyapps_io/
 ##### This project was done as part of R programming assignment for my Master’s program. The ask was to create a R-Shiny app which visualises air pollution data collected across multiple sites in the Czech Republic from 2013 to 2019. The air quality standards in the EU (as of 2021) are: 
-•	Fine particulates (PM2.5) Yearly average of at most 25μg/m3. 
-•	Particulates (PM10) Daily average exceeding 50μg/m3 observed on at most 35 days a year, and yearly average of at most 40μg/m3. 
-•	Sulphur dioxide (SO2) Hourly concentration exceeding 350μg/m3 for at most 24 hours per year, and average daily concentration exceeding 125μg/m3 on at most 3 days per year. 
-•	Nitrogendioxide(NO2) Hourly concentration exceeding 200μg/m3 for at most 18hours per year, and average yearly concentration of at most 40μg/m3. 
+- Fine particulates (PM2.5) Yearly average of at most 25μg/m3. 
+- Particulates (PM10) Daily average exceeding 50μg/m3 observed on at most 35 days a year, and yearly average of at most 40μg/m3. 
+- Sulphur dioxide (SO2) Hourly concentration exceeding 350μg/m3 for at most 24 hours per year, and average daily concentration exceeding 125μg/m3 on at most 3 days per year. 
+- Nitrogendioxide(NO2) Hourly concentration exceeding 200μg/m3 for at most 18hours per year, and average yearly concentration of at most 40μg/m3. 
 ###### Data:
 The data is available as a collection of CSV files, as downloaded from European Environmental Agency (see https://www.eea.europa.eu/themes/air). The file Stations.csv contains information about each station. There is one CSV file for each station and each pollutant (PM2.5, PM10, SO2 and NO2) measured at the station (not every pollutant is measured at every station). The filenames are of the form <EoICode>_<PollutantCode>.csv. Each row of these files contains hourly measurements of that pollutant at that station. For some stations there only is data for a subset of the time points. 
 
