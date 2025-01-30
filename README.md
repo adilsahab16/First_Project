@@ -9,6 +9,8 @@ The app is available in : https://adil-sahab-16.shinyapps.io/Shinyapps_io/
 The data is available as a collection of CSV files, as downloaded from European Environmental Agency (see https://www.eea.europa.eu/themes/air). The file Stations.csv contains information about each station. There is one CSV file for each station and each pollutant (PM2.5, PM10, SO2 and NO2) measured at the station (not every pollutant is measured at every station). The filenames are of the form <EoICode>_<PollutantCode>.csv. Each row of these files contains hourly measurements of that pollutant at that station. For some stations there only is data for a subset of the time points. 
 
 ###### App Functionality:
+<img width="1388" alt="Screenshot 2025-01-30 at 5 08 19 PM" src="https://github.com/user-attachments/assets/6c1d6d30-7a41-4cfb-952e-38867d422425" />
+
 The Shiny app visualises the data with the following functionality:
 - The core functionality of the app is to produce time series plots of relevant summary statistics against time. 
 - The user can select for which pollutant and for which stations (atmost3) the quantities should be shown.
@@ -25,7 +27,9 @@ For aggregations involving a threshold, the user can choose this threshold.
   - Date within the year (going from Jan 1st to Dec 31st)
   - Day or hour within the week (going from 0 to 7 (days) or 0 to 168 (hours))
   - Hour in the day (going from 0 to 24 (hours)). 
-- If the choice of pollutant and aggregation matches a criterion from the EU air quality standard, then the plot shows a horizontal line at the threshold for that criterion. For example, if the user wants to plot the raw hourly data for SO2, then a horizontal line is drawn at y = 350. 
+- If the choice of pollutant and aggregation matches a criterion from the EU air quality standard, then the plot shows a horizontal line at the threshold for that criterion. For example, if the user wants to plot the raw hourly data for SO2, then a horizontal line is drawn at y = 350.
+<img width="970" alt="Screenshot 2025-01-30 at 5 21 11 PM" src="https://github.com/user-attachments/assets/c553e76a-bdb9-485b-b0ea-a5d3a181c776" />
+
 - The app also shows a second plot with the location of the measuring station(s). 
 - Below the plot, a table shows the data used in the plot in wide format (ie. The columns correspond to measuring stations). 
 - The user can also download the table as a CSV file and the plots and table together as a Word document (generated using rmarkdown). 
@@ -33,3 +37,8 @@ For aggregations involving a threshold, the user can choose this threshold.
 - The file ui.R specifies the layout (“user interface”) of the app.
 - The file server.R contains the “backend” performing the calculations and producing the plots and other outputs.
 - The file report.Rmd helps the app download the report as a Word document.
+###### Error Handling:
+<img width="237" alt="Screenshot 2025-01-30 at 5 10 28 PM" src="https://github.com/user-attachments/assets/d48e54cb-f0d1-4661-904a-24d24c7053a7" />
+
+Once the Pollutant and stations are selected, and if another pollutant is selected and if the previously selected stations are not available for that pollutant, the above error notification pops up at the bottom of the screen.
+
